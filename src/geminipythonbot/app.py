@@ -1,65 +1,53 @@
-import streamlit as st 
-from langchain.prompts import (
-    ChatPromptTemplate,
-    HumanMessagePromptTemplate,
-    SystemMessagePromptTemplate,
-    MessagesPlaceholder,
-)
-from langchain_community.chat_message_histories import StreamlitChatMessageHistory
-from langchain_core.runnables.history import RunnableWithMessageHistory
+import streamlit as st
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain.schema import AIMessage, HumanMessage
+import time  
 
-st.set_page_config(page_title="AI Text Assistant", page_icon="👽")
-st.title("AI Chatbot")
+# ✅ صفحے کی سیٹنگز
+st.set_page_config(page_title="AI Chatbot", page_icon="🤖")
+st.title("🤖 AI Chatbot")
+st.markdown("Hello! I'm your AI Assistant. Ask me anything.")
 
-st.markdown("Hello! I'm your AI Assistant. I can help answer you any technology and education related question")
-
-# API key from secrets
+# ✅ API Key حاصل کریں
 api_key = st.secrets["google"]["api_key"]
 
-prompt = ChatPromptTemplate(
-    messages=[
-        SystemMessagePromptTemplate.from_template(
-            "You are a helpful AI Assistant. Please respond to the user in English"
-        ),
-        MessagesPlaceholder(variable_name="chat_history"),
-        HumanMessagePromptTemplate.from_template("{question}"),
-    ]
-)
+# ✅ چیٹ ہسٹری محفوظ رکھیں
+if "chat_history" not in st.session_state:
+    st.session_state.chat_history = []
 
-msgs = StreamlitChatMessageHistory(key="langchain_messages")
-
+# ✅ ماڈل سیٹ اپ کریں
 model = ChatGoogleGenerativeAI(model="gemini-1.5-flash", google_api_key=api_key)
 
-chain_with_history = RunnableWithMessageHistory(
-    prompt | model,  # Prompt aur model ko connect karein
-    lambda session_id: msgs,
-    input_messages_key="question",
-    history_message_key="chat_history",
-)
+# ✅ چیٹ ہسٹری دکھائیں
+for message in st.session_state.chat_history:
+    role = "user" if isinstance(message, HumanMessage) else "assistant"
+    with st.chat_message(role):
+        st.markdown(message.content)
 
-user_input = st.text_input("Enter your question in English", "")
-
+# ✅ یوزر ان پٹ لے کر پراسیس کریں
+user_input = st.chat_input("Ask me anything...")
 if user_input:
-    st.chat_message("human").write(user_input)
-
-    # Chat history update karein
-    msgs.add_message(HumanMessage(content=user_input))
-
+    st.session_state.chat_history.append(HumanMessage(content=user_input))
+    st.chat_message("user").write(user_input)
+    
     with st.chat_message("assistant"):
         message_placeholder = st.empty()
+        response = model.invoke(user_input).content
+        
+        # ✅ ٹائپنگ ایفیکٹ
         full_response = ""
-
-        config = {"configurable": {"session_id": "any"}}
-
-        response = chain_with_history.invoke({"question": user_input, "chat_history": []}, config)
-
-        full_response = response.content if hasattr(response, "content") else response
+        for letter in response:
+            full_response += letter
+            message_placeholder.markdown(full_response + "▌")  
+            time.sleep(0.02)
         message_placeholder.markdown(full_response)
+        
+        st.session_state.chat_history.append(AIMessage(content=full_response))
 
-        # Chat history mein assistant ka response add karein
-        msgs.add_message(AIMessage(content=full_response))
+# ✅ چیٹ صاف کرنے کا بٹن
+if st.button("Clear Chat"):
+    st.session_state.chat_history = []
+    st.experimental_rerun()
 
-else:
-    st.warning("Please enter your question.")
+
+
