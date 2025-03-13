@@ -1,0 +1,20 @@
+[project]
+name = "geminipythonbot"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+authors = [
+    { name = "DoniaBatool", email = "donia1510aptech@gmail.com" }
+]
+requires-python = ">=3.12"
+dependencies = [
+    "langchain-google-genai>=2.0.11",
+    "streamlit>=1.43.1",
+]
+
+[project.scripts]
+geminipythonbot = "geminipythonbot:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
