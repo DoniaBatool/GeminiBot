@@ -47,7 +47,7 @@ if user_input:
 # ✅ چیٹ صاف کرنے کا بٹن
 if st.button("Clear Chat"):
     st.session_state.chat_history = []
-    st.experimental_rerun()
+    st.rerun()
 
 
 
